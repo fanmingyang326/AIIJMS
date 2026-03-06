@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # 1. 数据库服务
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    # 不映射到宿主机端口，仅限内部访问，更安全
+
+  # 2. 后端服务 (FastAPI)
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - db
+
+  # 3. 前端服务 (Vue + Nginx)
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "8081:80" # 宿主机 8081 映射容器内 Nginx 的 80
